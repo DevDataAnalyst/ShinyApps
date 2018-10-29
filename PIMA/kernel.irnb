@@ -1,0 +1,218 @@
+{
+  "cells": [
+    {
+      "metadata": {
+        "_cell_guid": "300c7fe8-3f00-3dcb-6f80-f95a8bba37ba",
+        "_uuid": "b327100128b7389bd1eaef26a67dde3cc85eea53"
+      },
+      "cell_type": "markdown",
+      "source": "A first tryout with sharing a kernel on Kaggle using the data set available. I'll look into exploring this data set, on forecasting the onset of diabetes in a population of Pima Indians using various tools in statistical learning. It'll mainly be logistic regression since the response output, with or without diabetes, is of a binary format (yes/no or true/false), and in this case, `1/0`. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "8263a2b1-69f6-5eab-9533-5ff74ecb4890",
+        "_uuid": "2d39d8a98d44a303ccae1fd0d8ebb458528b6da1",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "# file preview shows a header row\ndiabetes <- read.csv(\"../input/diabetes.csv\", header = TRUE)\n\n# first look at the data set using summary() and str() to understand what type of data are you working\n# with\nsummary(diabetes)\nstr(diabetes)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "0b118dcb-3905-ccf9-750c-a76a927750d7",
+        "_uuid": "b6a6df0a8ead1d1c886e95962e319dbf772d4ff9"
+      },
+      "cell_type": "markdown",
+      "source": "The summary shows the mean, quartile etc values of the variables if they are numeric. The `Outcome` variable is supposed to be a factor with two levels, 1 and 0 and we're going to change that later. And note that some of the variables carry 0 values which is not quite possible. E.g. it is not possible for someone's `BMI` or `BloodPressure` be 0. So there must be some problem with collection of the data and we're going to do some tidying of the data. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "d3af157c-01c9-2285-7fa2-8a4d00d71327",
+        "_uuid": "28d52cdf04209822b8387a96719adf67b99ae334",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "diabetes$Outcome <- factor(diabetes$Outcome)\n\n# removing those observation rows with 0 in any of the variables\nfor (i in 2:6) {\n      diabetes <- diabetes[-which(diabetes[, i] == 0), ]\n}\n\n# modify the data column names slightly for easier typing\nnames(diabetes)[7] <- \"dpf\"\nnames(diabetes) <- tolower(names(diabetes))\n\nstr(diabetes)\nprint(paste0(\"number of observations = \", dim(diabetes)[1]))\nprint(paste0(\"number of predictors = \", dim(diabetes)[2]))\n",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "9df0e9f1-3107-9f24-b553-771b2f9d7f45",
+        "_uuid": "d54a9723226be8422dc67c6b20d8b2c7dca82306"
+      },
+      "cell_type": "markdown",
+      "source": "The number of observations remaining is 392, with 8 columns of variables and 1 column of response. We're going to look at some simple plots to better understand the data. It is easy to do since we only have 8 variables to work with. Plots do not need to look nice at this stage since we're looking to understand the data. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "a97c729d-6390-0808-83ef-fb8a350f7f77",
+        "_uuid": "bc3c1fa196fa32064501f1556023992323c66239",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "par(mfrow = c(2, 2))\n\n# the $ notation can be used to subset the variable you're interested in.\nhist(diabetes$pregnancies)\nhist(diabetes$age)\nhist(diabetes$glucose)\nhist(diabetes$bmi)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "45c20582-02b7-0474-052b-1c605ffaf589",
+        "_uuid": "30def93703c7cef7b26e602a8e53594e0c83333d"
+      },
+      "cell_type": "markdown",
+      "source": "The graphs show some of the distributions of the variables. Age and number of times pregnant are not normal distributions as expected since the underlying population should not be normally distributed either. This 392 observations are just a sample of the original population. On the other hand, the glucose level and BMI seem to follow a normal distribution. When performing any analysis, it is always good to know what is the distribution of the data so all the assumptions for different tests or models can be met. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "364ccd69-7894-936e-dde1-d6f491fa7c8d",
+        "_uuid": "47d541eb91b9dd04a29316a2ce296b69b4d90025",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "par(mfrow = c(1, 2))\n\n# boxplot\nwith(diabetes, boxplot(dpf ~ outcome, \n                       ylab = \"Diabetes Pedigree Function\", \n                       xlab = \"Presence of Diabetes\",\n                       main = \"Figure A\",\n                       outline = FALSE))\n\n# subsetting based on response\nwith <- diabetes[diabetes$outcome == 1, ]\nwithout <- diabetes[diabetes$outcome == 0, ]\n\n# density plot\nplot(density(with$glucose), \n     xlim = c(0, 250),\n     ylim = c(0.00, 0.02),\n     xlab = \"Glucose Level\",\n     main = \"Figure B\",\n     lwd = 2)\nlines(density(without$glucose), \n      col = \"red\",\n      lwd = 2)\nlegend(\"topleft\", \n       col = c(\"black\", \"red\"), \n       legend = c(\"With Diabetes\", \"Without Diabetes\"), \n       lwd = 2,\n       bty = \"n\")\n\n# simple two sample t-test with unequal variance\nt.test(with$dpf, without$dpf)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "90587c4f-fa7f-707c-6007-cbfebf41be84",
+        "_uuid": "49f46816e86e8ecdbf3cda2da4724323444644ec"
+      },
+      "cell_type": "markdown",
+      "source": "Other plots such as boxplot or density plot can also be used to look at the difference in values of the variables between those with diabetes and those without. We can see from Figure B that the distribution to shifted towards the left for those without diabetes. This means those without diabetes generally have a lower blood glucose level."
+    },
+    {
+      "metadata": {
+        "_cell_guid": "bd9a427d-c4e8-5f5e-8d59-655458c31187",
+        "_uuid": "89913b61f6779c26fc685e678c0b9bbb70e8781c",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "# correlation matrix\nlibrary(reshape2)\ncor_melt <- melt(cor(diabetes[, 1:8]))\ncor_melt <- cor_melt[which(cor_melt$value > 0.5 & cor_melt$value != 1), ]\ncor_melt <- cor_melt[1:3, ]\ncor_melt",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "45d7acbb-63c3-6c59-4a6e-8601a872f135",
+        "_uuid": "e03266c1e6fa677fdaa014b545471d8085c88b59"
+      },
+      "cell_type": "markdown",
+      "source": "We can also create a table of the correlations between the variables, and keep only those pairs with correlation values higher than 0.5. However, this is not a good indicator of correlations between the variables as there might be some other unknown interaction effects not taken into account to. Next, we'll use LASSO regression to fit a model for this data set, and perform simple predictions by splitting the data set into training and validation set. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "b29a3cf1-585f-41ef-e191-a5ada3102394",
+        "_uuid": "2846a08ea64253852b6020c90836c31542e761fa",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "library(glmnet)\n\n# creating a random set of observations to be in the training set\nset.seed(100)\ninTrain <- sample(x = seq(1, 392), size = 294, replace = FALSE)\n\n# preparing the inputs for the function cv.glmnet()\n# you can use ?glmnet to understand more\nx <- model.matrix(outcome ~ . - 1, data = diabetes)\ny <- diabetes$outcome\n\n# model fitting with lasso (alpha = 1)\n# since response is binary, we'll set the [family = \"binomial\"] in the argument\n# lasso regression also perform variable selection to determine which are the important variables\nfit.lasso.cv <- cv.glmnet(x[inTrain, ], y[inTrain], alpha = 1, family = \"binomial\")\nplot(fit.lasso.cv)\n\nprint(paste0(\"minimum binomial deviance = \", round(min(fit.lasso.cv$cvm), 3)))\nprint(paste0(\"log(lambda) with minimum binomial deviance = \", round(log(fit.lasso.cv$lambda.min), 3)))\ncoef(fit.lasso.cv)\n\n# prediction with the validation data set\npred <- predict(fit.lasso.cv, newx = x[-inTrain, ])\npred <- exp(pred) / (1 + exp(pred))\npred <- ifelse(pred >= 0.5, 1, 0)\ntable(pred, y[-inTrain])\n\n# calculate the accuracy\ncorrect_pred <- sum(table(pred, y[-inTrain])[c(1, 4)])\ntotal <- length(y[-inTrain])\nacc <- correct_pred / total\nprint(paste0(\"accuracy = \", round(acc, 3)))",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "529060e6-9fd2-38d5-b689-149f124f0bd7",
+        "_uuid": "8be5b1bc1363fb4c86211838554f4c9d3e6f5c2e"
+      },
+      "cell_type": "markdown",
+      "source": "Using a portion of the data set as the training data, we fitted a lasso regression model for the data. The important variables are glucose level, BMI, age and diabetes pedigree function. We then use the remaining data as the validation set and predict the presence of diabetes using the function. We manage to achieve an accuracy of 0.755. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "c2f26a65-619d-2218-f918-9e1dfa7d10e1",
+        "_uuid": "38dd62433fba41c64e1c2287ac8616ed58164f0d"
+      },
+      "cell_type": "markdown",
+      "source": "There are other methods of model fitting such as logistic regression or support vector machine. It depends heavily of the type of data you have before choosing the type of method used for model fitting. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "0471fc9d-d4bf-01e7-f8e8-30aea16d5950",
+        "_uuid": "96b84770eb3992d6c04fb08d52106a71f5298fdf"
+      },
+      "cell_type": "markdown",
+      "source": "Fitting with logistic regression using `glm()`. We need to take the `exp()` of the predicted values in order to get the probability response. Plotting the model from `glm()` gives some diagnostic plots needed to identify those observations with high leverages or that are outliers. These points **may** have to be removed for the model to be fitted better to the training set. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "26bd2cc1-037b-fc26-1ff1-b2517b041b6f",
+        "_uuid": "f2df3fc64729b447c975e05d36e1f3c32114df5e",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "library(caret)\nfit.glm <- glm(outcome ~ ., data = diabetes[inTrain, ], family = binomial)\npred.glm.logistic <- predict(fit.glm, diabetes[-inTrain, ])\npred.glm <- exp(pred.glm.logistic) / (1 + exp(pred.glm.logistic))\npred.glm <- as.integer(pred.glm >= 0.5)\nconfusionMatrix(pred.glm, y[-inTrain])[2:3]\npar(mfrow = c(2, 2))\nplot(fit.glm)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "f3f90d0e-035c-3fb2-05c0-58ef2410abdc",
+        "_uuid": "f4c34607602fe458df51ee7c58451b4eed7fe3fc"
+      },
+      "cell_type": "markdown",
+      "source": "Random forest. There are a handful of tuning parameters that can be adjusted to ensure a better fit using random forest, namely the `mtry` and `ntree`. However, I did not go into details on adjusting these parameters. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "e9deb056-7c26-2ffc-6952-685d5ed6688d",
+        "_uuid": "a467037be8ef07f65b785e84dc61b63231c2d858",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "library(randomForest)\nset.seed(123)\nfit.rf <- randomForest(outcome ~ .,\n                       diabetes[inTrain, ],\n                       mtry = 3, # number of predictors to use for generation of tree \n                       ntree = 500, # number of trees to create\n                       importance = TRUE)\npred.rf <- predict(fit.rf, diabetes[-inTrain, ])\nconfusionMatrix(pred.rf, y[-inTrain])[2:3]\nimportance(fit.rf)\nvarImpPlot(fit.rf)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "0878f866-7964-fd9d-faba-f61c6e2a5438",
+        "_uuid": "465f3186efab65c1a89731e56e62bd82b3e9bf49"
+      },
+      "cell_type": "markdown",
+      "source": "Lastly, the most easily interpreted model, CART. The tree model can be quite hard to read when there are too many terminal nodes. "
+    },
+    {
+      "metadata": {
+        "_cell_guid": "b77221fd-ac3f-30a5-9b9c-3d4351cd4fcc",
+        "_uuid": "2b07cac577765f1f8e30d3a2427a5ea15a569816",
+        "trusted": false
+      },
+      "cell_type": "code",
+      "source": "library(tree)\nset.seed(123)\nfit.tree <- tree(outcome ~ ., \n                 data = diabetes[inTrain, ])\npred.tree <- predict(fit.tree, diabetes[-inTrain, ], type = \"class\")\nconfusionMatrix(pred.tree, y[-inTrain])[2:3]\nplot(fit.tree)\ntext(fit.tree, pretty = 0)",
+      "execution_count": null,
+      "outputs": []
+    },
+    {
+      "metadata": {
+        "_cell_guid": "6ee0f56b-008a-8b89-0b07-22cab358b572",
+        "_uuid": "14a3c671a360ae9dc00ce2e877769835ad5a8229"
+      },
+      "cell_type": "markdown",
+      "source": "For some fitting methods, there are tuning parameters built into the model that compensate for the number of predictors added into the model during the fitting. These compensations prevent the model from over-fitting the training set data, and in certain ways optimize the bias-variance trade-off. These parameters can be adjusted using cross validation to allow the model to fit better to the data set. Thus, there are a lot more work to do then just running the data through all the default statistical learning methods. "
+    }
+  ],
+  "metadata": {
+    "_change_revision": 0,
+    "_is_fork": false,
+    "kernelspec": {
+      "display_name": "R",
+      "language": "R",
+      "name": "ir"
+    },
+    "language_info": {
+      "mimetype": "text/x-r-source",
+      "name": "R",
+      "pygments_lexer": "r",
+      "version": "3.4.2",
+      "file_extension": ".r",
+      "codemirror_mode": "r"
+    }
+  },
+  "nbformat": 4,
+  "nbformat_minor": 1
+}
