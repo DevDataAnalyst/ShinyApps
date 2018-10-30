@@ -13,17 +13,17 @@ if (!require("corrplot")) install.packages("corrplot")
 if (!require("RColorBrewer")) install.packages("RColorBrewer")
 if (!require("rpart")) install.packages("rpart")
 if (!require("rpart.plot")) install.packages("rpart.plot")
-if (!require("e1071")) install.packages("e1071")
+if (!require("gridExtra")) install.packages("gridExtra")
 
 
-setwd("C:/PIMA")
+#setwd("C:/PIMA")
 shinyApp(
   ui = tagList(
     shinythemes::themeSelector(),
     navbarPage(
-      
       "PIMA Diabetes Analysis",
       tabPanel("About PIMA",
+       
         sidebarPanel(
           h4("Prediction of Diabetes in PIMA Women "),
           br(),
@@ -50,7 +50,7 @@ shinyApp(
                  tabsetPanel(
                    tabPanel("PIMA Data",h4("   "),dataTableOutput("table1")),
                    tabPanel("Response Variable",plotOutput("plot1")),
-                   tabPanel("Predictor Variables",plotOutput("plot2")),
+                   tabPanel("Predictor Variables",h4("  "),plotOutput("plot2"),plotOutput("plot2a")),
                    tabPanel("Bivariate Associations",plotOutput("plot3")),
                    tabPanel("Correlations between Predictor variables",plotOutput("plot4"))
                   ),
@@ -59,7 +59,7 @@ shinyApp(
       ),
       tabPanel("Data Modelling",
                sidebarPanel(
-                 h5("Click on each tab to see the results"),width = 3
+                 h5("Click on each tab to see the results"),width = 2
                ),
                mainPanel(
                  tabsetPanel(
@@ -68,17 +68,27 @@ shinyApp(
                    tabPanel("Classification Tree",h4("Classification Tree"),p(" "),plotOutput("plot7")),
                    tabPanel("Classification Tree - Parameter Tuning",h4("Classification Tree - Parameter Tuning"),p(" "),plotOutput("plot8"))
                  ),
-                 width = 9
+                 width = 10
                )
       ),
       tabPanel("Model Performance Evaluation",
-               sidebarPanel(h5(" "),width = 3),
-               mainPanel(h5(" "),width = 9)
+               sidebarPanel(
+                 h5("Click on each tab to compare the results"),width = 2
+               ),
+               mainPanel(
+                 tabsetPanel(
+                   tabPanel("Logistic Regression",h4(" Logistic Regression Performance"),p(" "),verbatimTextOutput("plot9")),
+                   tabPanel("Logit Model",h4("Prediction"),p(" "),plotOutput("plot10")),
+                   tabPanel("Classification Tree",h4("Classification Tree Performance"),p(" "),plotOutput("plot11")),
+                   tabPanel("CART Model",h4("Confusion Matrix and Statistics"),p(" "),plotOutput("plot12"))
+                 ),
+                 width = 10
+               )
       ),
       tabPanel("Conclusion",
-               sidebarPanel(h5(" "),width = 3),
-               mainPanel(h5(" "),width = 9)
-        
+               sidebarPanel(h5(" "),width = 2),
+               mainPanel(h5("Conclusion"),p("he PIMA Indian Women's Database was analyzed and explored in detail. The patterns identified using Data exploration methods were validated using the modeling techniques employed. Classification models such as Logistic Regression, Classification Trees, Random Forest and SVM were built and evaluated to identify best model to predict the occurrence of Diabetes in PIMA Indian women. From the cross-validated performance measure of sensitivity, the Logistic Regression model was concluded as the best performing model."),width = 9)
+        ,width = 10
       )
     )
   ),
@@ -111,7 +121,7 @@ shinyApp(
       ggplot(data,aes(Outcome,fill = Outcome)) +
         geom_bar() + 
         ggtitle("\n\nDistribution of Outcome variable\n")
-    })
+    },height = 900)
     })
     observeEvent(input$action,{output$plot2 = renderPlot({
       
@@ -131,8 +141,87 @@ shinyApp(
         scale_x_continuous(limits = c(0,16)) +
         theme(legend.position = "bottom") +
         labs(title = "Pregnancies Vs Outcome")
-        gridExtra::grid.arrange(p1, p2, ncol = 2)
-      })
+      
+      # 2. Glucose
+      p3 <- ggplot(data, aes(x = Glucose, color = Outcome, fill = Outcome)) +
+        geom_density(alpha = 0.8) +
+        theme(legend.position = "bottom") +
+        labs(x = "Glucose", y = "Density", title = "Density plot of glucose")
+      
+      p4 <- ggplot(data, aes(x = Outcome, y = Glucose,fill = Outcome)) +
+        geom_boxplot() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of glucose in women Vs Diabetes")
+      
+      # 3. Blood Pressure
+      p5 <- ggplot(data, aes(x = BloodPressure, color = Outcome, fill = Outcome)) +
+        geom_density(alpha = 0.8) +
+        theme(legend.position = "bottom") +
+        labs(x = "Blood pressure", y = "Density", title = "Density plot of Blood pressure")
+      
+      p6 <- ggplot(data, aes(x = Outcome, y = BloodPressure,fill = Outcome)) +
+        geom_boxplot() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of blood pressure in women Vs Diabetes")
+      
+      # 4. Skin Thickness
+      p7 <- ggplot(data, aes(x = SkinThickness, color = Outcome, fill = Outcome)) +
+        geom_density(alpha = 0.8) +
+        theme(legend.position = "bottom") +
+        labs(x = "Skin thickness", y = "Density", title = "Density plot of skin thickness")
+      
+      p8 <- ggplot(data, aes(x = Outcome, y = SkinThickness,fill = Outcome)) +
+        geom_boxplot() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of skin thickness Vs Diabetes")
+      
+      # 5. Insulin
+      p9 <- ggplot(data, aes(x = Outcome, y = Insulin,fill = Outcome)) +
+        geom_boxplot() + 
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of Insulin content Vs Diabetes")
+      
+      p10 <- ggplot(data, aes(Insulin, fill = Outcome)) +
+        geom_histogram(binwidth=10) +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of Insulin content Vs Diabetes")
+      
+      # 6. BMI
+      p11 <- ggplot(data, aes(BMI, fill = Outcome)) +
+        geom_histogram() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of BMI of women Vs Diabetes")
+      
+      p12 <- ggplot(data, aes(x = Outcome, y = BMI,fill = Outcome)) +
+        geom_boxplot(binwidth = 5) +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of BMI of women Vs Diabetes")
+      
+      # 7. DPF
+      p13 <- ggplot(data, aes(x = Outcome, y = DiabetesPedigreeFunction,fill = Outcome)) +
+        geom_boxplot() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of DPF of women Vs Diabetes")
+      
+      
+      p14 <- ggplot(data, aes(DiabetesPedigreeFunction,fill = Outcome)) +
+        geom_histogram() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of DPF Vs Diabetes")
+      
+      # 8. Age
+      p15 <- ggplot(data, aes(Age, fill = Outcome)) +
+        geom_histogram(binwidth = 5) +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of Age of women Vs Diabetes")
+      
+      p16 <- ggplot(data, aes(x = Outcome, y = Age,fill = Outcome)) +
+        geom_boxplot() +
+        theme(legend.position = "bottom") +
+        ggtitle("Variation of Age of women Vs Diabetes")
+      
+        gridExtra::grid.arrange(p1, p2,p3, p4,p5,p6,p7,p8,p9,p10,p11,p12,p13,p14,p15,p16, ncol = 4, nrow = 4)
+      }, height = 1000)
     })
     observeEvent(input$action,{output$plot3 = renderPlot({
       data = x()
